@@ -187,3 +187,20 @@ At customer scale the same lifecycle moves onto a persistent control plane
 (dependencies, security, flaky-test detection from CI retries), routes
 `devin_mode` by measured task class, and pulls runtime evidence through MCP
 (Sentry, Datadog). The GitHub-native UX remains as the per-repo surface.
+
+## Candidate backlog (identified, deliberately not selected)
+
+Candidates surfaced by repository mining and scanner runs, evaluated and
+rejected for this iteration — selection is a policy decision, not an
+accident of discovery:
+
+- SQL Lab quarantine cluster (~12 skipped integration tests) — a backlog, not
+  one root cause; needs per-test triage before any dispatch.
+- `test_create_database_with_ssh_tunnel_no_port_no_default` skipped as
+  "buggy" — zero-information skip; requires cheap local reproduction before
+  it earns an agent session.
+- Import/export tests skipped "Schema needs to be updated" — legitimate
+  maintenance, low demonstration value.
+- `eslint-plugin-i18n-strings` npm advisory name-collision with the local
+  workspace package — worthwhile supply-chain investigation; deferred to keep
+  the portfolio focused.
