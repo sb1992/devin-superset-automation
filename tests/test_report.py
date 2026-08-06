@@ -66,3 +66,14 @@ def test_median_ignores_pairs_with_end_before_start():
     ]
     assert median_minutes(pairs) == 18
     assert median_minutes([("2026-08-07T04:00:00Z", "2026-08-06T04:00:00Z")]) is None
+
+
+def test_dashboard_shows_duration_and_acu_lag_note():
+    runs = [
+        {"issue": 21, "title": "A", "state": "succeeded", "session_url": "https://s/1",
+         "pr_url": "https://p/1", "acus_consumed": 0.0,
+         "dispatched_at": "2026-08-07T04:00:00Z", "pr_opened_at": "2026-08-07T04:18:00Z"},
+    ]
+    md = build_dashboard(runs, generated_at="now")
+    assert "18m" in md                     # duration to PR
+    assert "may lag" in md                 # ACU honesty note

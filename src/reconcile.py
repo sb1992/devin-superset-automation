@@ -196,6 +196,12 @@ def _reconcile_issue(cfg, gh, devin, issue) -> dict | None:
         pr_opened_at=pr_opened_at,
     )
     validation = [f"{name}: {conclusion or 'running'}" for name, conclusion in sorted(checks.items())]
+    output = session.get("structured_output")
+    if isinstance(output, dict) and output.get("outcome"):
+        validation.insert(
+            0,
+            f"Devin-reported outcome: `{output['outcome']}` (independently verified against PR and CI)",
+        )
     body = render_status_comment(
         new_marker,
         status_line=_STATUS_LINES.get(state, state),
