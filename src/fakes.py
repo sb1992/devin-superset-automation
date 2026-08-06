@@ -6,6 +6,8 @@ import itertools
 
 
 class FakeGitHub:
+    default_author = "github-actions[bot]"
+
     def __init__(self, issues: dict[int, dict] | None = None):
         self.issues = issues or {}
         self.comments: dict[int, list[dict]] = {n: [] for n in self.issues}
@@ -35,8 +37,9 @@ class FakeGitHub:
     def list_comments(self, issue_number):
         return list(self.comments.get(issue_number, []))
 
-    def create_comment(self, issue_number, body, author="github-actions[bot]"):
-        comment = {"id": next(self._comment_ids), "body": body, "user": {"login": author}}
+    def create_comment(self, issue_number, body, author=None):
+        comment = {"id": next(self._comment_ids), "body": body,
+                   "user": {"login": author or self.default_author}}
         self.comments.setdefault(issue_number, []).append(comment)
         return comment
 
@@ -62,6 +65,9 @@ class FakeGitHub:
 
     def check_runs_for_ref(self, ref):
         return dict(self.checks.get(ref, {}))
+
+    def authenticated_login(self):
+        return self.default_author
 
 
 class FakeDevin:

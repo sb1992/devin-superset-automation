@@ -38,6 +38,17 @@ class GitHubClient:
                 return items
             page += 1
 
+    def authenticated_login(self) -> str | None:
+        """Login of the token's identity, or None when the token has no user
+        (the Actions installation token). Cached per client."""
+        if not hasattr(self, "_login"):
+            try:
+                r = self.session.get(f"{API}/user", timeout=30)
+                self._login = r.json().get("login") if r.ok else None
+            except Exception:
+                self._login = None
+        return self._login
+
     def get_issue(self, number: int) -> dict:
         return self._get(f"/issues/{number}")
 

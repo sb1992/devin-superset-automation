@@ -24,9 +24,18 @@ from .state import Marker, MarkerParse, parse_marker, render_status_comment, sca
 READY_LABEL = "devin:ready"
 RUNNING_LABEL = "devin:running"
 
-# Comment authors whose markers are trusted as controller state. The workflow
-# token comments as github-actions[bot].
+# Comment authors whose markers are trusted as controller state: the workflow
+# token (github-actions[bot]) plus the current token's own identity, so
+# operator-run dispatches outside Actions still produce trusted markers.
 CONTROLLER_AUTHORS = {"github-actions[bot]"}
+
+
+def _trusted_authors(gh) -> set[str]:
+    trusted = set(CONTROLLER_AUTHORS)
+    login = getattr(gh, "authenticated_login", lambda: None)()
+    if login:
+        trusted.add(login)
+    return trusted
 
 _SCHEMA_PATH = Path(__file__).resolve().parent.parent / "schemas" / "remediation-result.json"
 
@@ -46,8 +55,9 @@ def find_marker_comment(gh, issue_number: int):
     trusted marker exists. Raises _InvalidMarker if a controller-authored
     marker block exists but cannot be parsed (fail closed).
     """
+    trusted = _trusted_authors(gh)
     for comment in gh.list_comments(issue_number):
-        if _comment_author(comment) not in CONTROLLER_AUTHORS:
+        if _comment_author(comment) not in trusted:
             continue
         verdict = scan_marker(comment.get("body", ""))
         if verdict is MarkerParse.VALID:

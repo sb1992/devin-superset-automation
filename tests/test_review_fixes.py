@@ -200,3 +200,15 @@ def test_escape_cell_neutralizes_backslash_pipe():
     out = _escape_cell("x\\|y")
     assert "\\\\" in out  # backslash escaped before the pipe
     assert "\\|" in out
+
+
+def test_marker_from_token_identity_is_trusted():
+    """Dispatch may run outside Actions (operator laptop); markers authored by
+    the token's own identity must be trusted, not only github-actions[bot]."""
+    gh, devin, cfg = make_world()
+    gh.default_author = "sb1992"           # comments the fake creates are authored by the operator
+    run_dispatch(cfg, gh, devin, issue_number=22)
+    gh.add_labels(22, ["devin:ready"])
+    result = run_dispatch(cfg, gh, devin, issue_number=22)
+    assert result["reason"] == "duplicate"  # marker recognized despite non-bot author
+    assert len(devin.created) == 1
