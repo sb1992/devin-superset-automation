@@ -37,6 +37,20 @@ def _trusted_authors(gh) -> set[str]:
         trusted.add(login)
     return trusted
 
+
+def _marker_is_self_attested(comment: dict) -> bool:
+    """A marker that records its own author matches that comment's author.
+
+    Dispatch may run under one identity (an operator token) and reconcile under
+    another (the Actions token). The recorded `written_by` lets the later run
+    trust the marker without widening trust to arbitrary commenters: the claim
+    must match the actual comment author GitHub reports.
+    """
+    marker = parse_marker(comment.get("body", ""))
+    if marker is None or not marker.written_by:
+        return False
+    return marker.written_by == _comment_author(comment)
+
 _SCHEMA_PATH = Path(__file__).resolve().parent.parent / "schemas" / "remediation-result.json"
 
 
@@ -57,7 +71,7 @@ def find_marker_comment(gh, issue_number: int):
     """
     trusted = _trusted_authors(gh)
     for comment in gh.list_comments(issue_number):
-        if _comment_author(comment) not in trusted:
+        if _comment_author(comment) not in trusted and not _marker_is_self_attested(comment):
             continue
         verdict = scan_marker(comment.get("body", ""))
         if verdict is MarkerParse.VALID:
@@ -126,6 +140,7 @@ def run_dispatch(cfg, gh, devin, issue_number: int) -> dict:
         acus_consumed=0.0,
         pr_url=None,
         pr_number=None,
+        written_by=getattr(gh, "authenticated_login", lambda: None)(),
     )
     comment = gh.create_comment(
         issue_number,

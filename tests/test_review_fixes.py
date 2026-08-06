@@ -212,3 +212,16 @@ def test_marker_from_token_identity_is_trusted():
     result = run_dispatch(cfg, gh, devin, issue_number=22)
     assert result["reason"] == "duplicate"  # marker recognized despite non-bot author
     assert len(devin.created) == 1
+
+
+def test_marker_recorded_author_is_trusted_across_identities():
+    """A marker written by the operator token must remain trusted when a later
+    reconcile runs under the Actions token (and vice versa): the marker records
+    who wrote it, and that recorded identity is honored."""
+    gh, devin, cfg = make_world()
+    gh.default_author = "sb1992"                 # dispatch ran locally
+    run_dispatch(cfg, gh, devin, issue_number=22)
+
+    gh.authenticated_login = lambda: "github-actions[bot]"  # reconcile runs in Actions
+    summary = run_reconcile(cfg, gh, devin)
+    assert [r["issue"] for r in summary["runs"]] == [22]

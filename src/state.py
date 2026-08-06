@@ -37,6 +37,7 @@ class Marker:
     pr_number: int | None
     pr_opened_at: str | None = None
     ci_feedback_sent_at: str | None = None
+    written_by: str | None = None
 
 
 def render_marker(marker: Marker) -> str:
