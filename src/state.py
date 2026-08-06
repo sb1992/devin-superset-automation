@@ -3,11 +3,18 @@ controller-owned status comment on each remediation issue."""
 
 from __future__ import annotations
 
+import enum
 import json
 import re
 from dataclasses import asdict, dataclass
 
 MARKER_VERSION = 1
+
+
+class MarkerParse(enum.Enum):
+    ABSENT = "absent"
+    INVALID = "invalid"
+    VALID = "valid"
 MARKER_OPEN = "<!-- devin-remediation-state"
 MARKER_CLOSE = "-->"
 _MARKER_RE = re.compile(
@@ -29,11 +36,20 @@ class Marker:
     pr_url: str | None
     pr_number: int | None
     pr_opened_at: str | None = None
+    ci_feedback_sent_at: str | None = None
 
 
 def render_marker(marker: Marker) -> str:
     payload = {"version": MARKER_VERSION, **asdict(marker)}
     return f"{MARKER_OPEN}\n{json.dumps(payload, indent=2)}\n{MARKER_CLOSE}"
+
+
+def scan_marker(body: str) -> MarkerParse:
+    """Fail-closed classification: distinguish a missing marker from a marker
+    block that exists but cannot be trusted (corruption, future version)."""
+    if MARKER_OPEN not in (body or ""):
+        return MarkerParse.ABSENT
+    return MarkerParse.VALID if parse_marker(body) is not None else MarkerParse.INVALID
 
 
 def parse_marker(body: str) -> Marker | None:

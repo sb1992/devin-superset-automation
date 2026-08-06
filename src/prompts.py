@@ -7,6 +7,8 @@ after the untrusted block so they cannot be overridden by injected text.
 
 from __future__ import annotations
 
+import re
+
 ISSUE_BODY_LIMIT = 6000
 
 _TEMPLATE = """You are remediating a GitHub issue in {repo}. Read issue #{issue_number} and remediate it using @skills:{skill_name}.
@@ -58,3 +60,14 @@ def redact(text: str | None, secrets: list[str]) -> str:
         if secret:
             out = out.replace(secret, "***")
     return out
+
+
+_TOKEN_SHAPES = re.compile(
+    r"(?:gh[pousr]_[A-Za-z0-9]{3,}|github_pat_[A-Za-z0-9_]{3,}|cog_[A-Za-z0-9]{3,}|apk_[A-Za-z0-9]{3,})"
+)
+
+
+def scrub_tokens(text: str | None) -> str:
+    """Remove credential-shaped strings (pasted tokens) from untrusted text
+    before it can reach a session prompt."""
+    return _TOKEN_SHAPES.sub("***", text or "")

@@ -22,9 +22,12 @@ class FakeGitHub:
         issue["labels"] = [{"name": n} for n in sorted(self.labels.get(number, set()))]
         return issue
 
-    def list_issues_with_labels(self, labels):
+    def list_issues_with_labels(self, labels, state="open"):
         out = []
-        for n in self.issues:
+        for n, issue in self.issues.items():
+            issue_state = issue.get("state", "open")
+            if state != "all" and issue_state != state:
+                continue
             if self.labels.get(n, set()) & set(labels):
                 out.append(self.get_issue(n))
         return out
@@ -32,8 +35,8 @@ class FakeGitHub:
     def list_comments(self, issue_number):
         return list(self.comments.get(issue_number, []))
 
-    def create_comment(self, issue_number, body):
-        comment = {"id": next(self._comment_ids), "body": body}
+    def create_comment(self, issue_number, body, author="github-actions[bot]"):
+        comment = {"id": next(self._comment_ids), "body": body, "user": {"login": author}}
         self.comments.setdefault(issue_number, []).append(comment)
         return comment
 

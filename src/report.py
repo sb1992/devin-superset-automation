@@ -45,11 +45,23 @@ def median_minutes(pairs: list[tuple[str, str]]) -> int | None:
     return round(statistics.median(deltas))
 
 
+def _escape_cell(text: str) -> str:
+    """Keep untrusted titles from corrupting the Markdown table."""
+    return (text or "").replace("|", "\\|").replace("\n", " ").replace("\r", " ")
+
+
 def collect_runs(gh) -> list[dict]:
-    """Rebuild the run list from GitHub state alone (markers on labeled issues)."""
+    """Rebuild the run list from GitHub state alone (markers on labeled issues).
+
+    Uses state="all" so closing a finished issue never erases history or ACU
+    totals from the dashboard.
+    """
     runs = []
-    for issue in gh.list_issues_with_labels(_STATE_LABELS):
-        _, marker = find_marker_comment(gh, issue["number"])
+    for issue in gh.list_issues_with_labels(_STATE_LABELS, state="all"):
+        try:
+            _, marker = find_marker_comment(gh, issue["number"])
+        except Exception:
+            continue
         if marker is None:
             continue
         runs.append(
@@ -108,7 +120,7 @@ def build_dashboard(runs: list[dict], generated_at: str) -> str:
         session = f"[session]({run['session_url']})" if run.get("session_url") else "—"
         pr = f"[PR]({run['pr_url']})" if run.get("pr_url") else "—"
         lines.append(
-            f"| #{run['issue']} {run['title'][:60]} "
+            f"| #{run['issue']} {_escape_cell(run['title'][:60])} "
             f"| {_STATE_DISPLAY.get(run['state'], run['state'])} "
             f"| {session} | {pr} | {run.get('acus_consumed') or 0} "
             f"| {run.get('dispatched_at', '—')} |"

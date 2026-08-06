@@ -35,21 +35,14 @@ class DevinClient:
     def list_playbooks(self) -> list[dict]:
         return self._request("GET", "/playbooks?limit=100").get("items", [])
 
-    def create_playbook(self, name: str, instructions: str) -> dict:
-        return self._request("POST", "/playbooks", json={"name": name, "instructions": instructions})
-
-    def update_playbook(self, playbook_id: str, name: str, instructions: str) -> dict:
-        return self._request(
-            "PUT", f"/playbooks/{playbook_id}", json={"name": name, "instructions": instructions}
-        )
+    def create_playbook(self, title: str, body: str) -> dict:
+        return self._request("POST", "/playbooks", json={"title": title, "body": body})
 
     def list_knowledge(self) -> list[dict]:
         return self._request("GET", "/knowledge/notes?limit=100").get("items", [])
 
-    def create_knowledge(self, name: str, body: str) -> dict:
-        return self._request("POST", "/knowledge/notes", json={"name": name, "body": body})
-
-    def update_knowledge(self, note_id: str, name: str, body: str) -> dict:
-        return self._request(
-            "PUT", f"/knowledge/notes/{note_id}", json={"name": name, "body": body}
-        )
+    def create_knowledge(self, name: str, body: str, trigger: str | None = None) -> dict:
+        payload = {"name": name, "body": body}
+        if trigger:
+            payload["trigger"] = trigger
+        return self._request("POST", "/knowledge/notes", json=payload)

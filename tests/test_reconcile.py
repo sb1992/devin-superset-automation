@@ -29,6 +29,7 @@ def add_pr(gh, devin, sid, number=23, sha="abc123", checks=None):
         "number": number,
         "html_url": f"https://github.com/sb1992/superset/pull/{number}",
         "head": {"sha": sha},
+        "base": {"ref": "master"},
         "state": "open",
     }
     if checks is not None:
@@ -87,10 +88,12 @@ def test_red_ci_sends_exactly_one_feedback_message():
     marker = parse_marker(gh.list_comments(22)[0]["body"])
     assert marker.ci_feedback_sent is True
 
-    # second reconcile with CI still red: no second message, run fails
+    # second reconcile with CI still red: no second message; stays open inside
+    # the repair grace window (failure-after-grace covered in test_review_fixes)
     run_reconcile(cfg, gh, devin)
     assert len(devin.messages) == 1
-    assert "devin:failed" in gh.labels[22]
+    assert "devin:failed" not in gh.labels[22]
+    assert "devin:pr-opened" in gh.labels[22]
 
 
 def test_exit_without_pr_fails():

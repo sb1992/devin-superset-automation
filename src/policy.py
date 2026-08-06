@@ -11,7 +11,7 @@ _WORKING_STATUSES = {"new", "claimed", "running", "resuming", "suspended"}
 _SUCCESS_CONCLUSIONS = {"success", "neutral", "skipped"}
 
 
-_FAILURE_CONCLUSIONS = {"failure", "cancelled", "timed_out", "action_required"}
+_FAILURE_CONCLUSIONS = {"failure", "cancelled", "timed_out", "action_required", "stale"}
 
 
 def ci_verdict(check_conclusions: dict, allowlist: list[str]) -> str:
@@ -20,8 +20,11 @@ def ci_verdict(check_conclusions: dict, allowlist: list[str]) -> str:
     Allowlist entries match check names by prefix, because matrix jobs expand
     ("unit-tests" -> "unit-tests (3.11)"). Checks outside the allowlist never
     affect the verdict (a fork cannot run upstream-credentialed jobs, and that
-    must not fail a remediation).
+    must not fail a remediation). An empty allowlist is a configuration error
+    and can never report green.
     """
+    if not allowlist:
+        return "pending"
     for entry in allowlist:
         matches = {n: c for n, c in check_conclusions.items() if n.startswith(entry)}
         if not matches:
