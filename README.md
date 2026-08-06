@@ -171,6 +171,14 @@ Four drill-down levels, all in GitHub:
 - No `pull_request_target`, no auto-merge, one CI repair message per session,
   per-session ACU cap.
 
+### A note on ACU reporting
+
+`acus_consumed` is read from the Devin API and can lag or read `0.0` while a
+session is in flight — the dashboard footer says so rather than presenting a
+mid-run zero as a real cost. Budget enforcement does not depend on this field:
+`max_acu_limit` is enforced by Devin itself, and a session cut off by its cap
+surfaces as an escalation (see below), not as a silent success.
+
 ## Known limitations
 
 - State lives in GitHub objects; a race between session creation and comment
@@ -179,6 +187,10 @@ Four drill-down levels, all in GitHub:
 - The 5-minute reconcile schedule is best-effort on GitHub's side; the manual
   trigger covers demos.
 - One target repository and one active skill per session by design.
+- A session stopped by its ACU cap files no structured output. The controller
+  treats that as `devin:blocked` (human review) even when the PR's CI is green,
+  because the evidence contract is unmet — green CI alone is necessary, not
+  sufficient. Raising the cap and resuming the session is a human decision.
 
 ## Production extension
 

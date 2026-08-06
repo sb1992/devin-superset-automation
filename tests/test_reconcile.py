@@ -143,3 +143,15 @@ def test_pr_opened_at_is_stamped_once_when_pr_first_seen():
     run_reconcile(cfg, gh, devin)
     marker2 = parse_marker(gh.list_comments(22)[0]["body"])
     assert marker2.pr_opened_at == marker1.pr_opened_at
+
+
+def test_budget_exhausted_session_with_green_ci_blocks_for_human():
+    """When a session is cut off by its ACU cap it files no structured output.
+    A green PR alone must not count as success: the run escalates instead."""
+    gh, devin, cfg, sid = dispatched_world()
+    add_pr(gh, devin, sid, checks={"unit-tests (3.11)": "success", "pre-commit": "success"})
+    devin.sessions[sid].update(status="suspended", structured_output=None)
+
+    run_reconcile(cfg, gh, devin)
+    assert "devin:blocked" in gh.labels[22]
+    assert "devin:succeeded" not in gh.labels[22]
