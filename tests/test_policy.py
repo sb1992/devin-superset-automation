@@ -37,8 +37,16 @@ def test_irrelevant_check_failures_do_not_affect_verdict():
 # --- map_session_state ------------------------------------------------------
 
 def test_working_statuses_map_to_running():
-    for s in ("new", "claimed", "running", "resuming", "suspended"):
+    for s in ("new", "claimed", "running", "resuming"):
         assert map_session_state(s) == "running"
+
+
+def test_suspended_is_evaluation_eligible():
+    """A session suspended for inactivity has finished acting; with a verified
+    PR, green CI, and valid output it must be able to reach succeeded. Sending
+    a message auto-resumes a suspended session, so the repair path still works."""
+    assert map_session_state("suspended") == "exited"
+    assert evaluate_run(session_state="exited", pr_exists=True, output_valid=True, ci="green") == "succeeded"
 
 
 def test_error_maps_to_failed_and_exit_maps_to_exited():

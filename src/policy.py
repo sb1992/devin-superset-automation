@@ -7,7 +7,7 @@ structured output validates, and every allowlisted check is green. Devin's own
 
 from __future__ import annotations
 
-_WORKING_STATUSES = {"new", "claimed", "running", "resuming", "suspended"}
+_WORKING_STATUSES = {"new", "claimed", "running", "resuming"}
 _SUCCESS_CONCLUSIONS = {"success", "neutral", "skipped"}
 
 
@@ -39,12 +39,14 @@ def ci_verdict(check_conclusions: dict, allowlist: list[str]) -> str:
 def map_session_state(devin_status: str) -> str:
     """Map a Devin v3 session status to a controller state.
 
-    Unknown future statuses map to "running" so a new API value degrades to
-    continued polling rather than a crash or a false terminal state.
+    "suspended" counts as evaluation-eligible: a session idled out after
+    finishing its work, and messaging it auto-resumes, so the repair path is
+    unaffected. Unknown future statuses map to "running" so a new API value
+    degrades to continued polling rather than a false terminal state.
     """
     if devin_status == "error":
         return "failed"
-    if devin_status == "exit":
+    if devin_status in ("exit", "suspended"):
         return "exited"
     return "running"
 
