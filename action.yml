@@ -1,0 +1,26 @@
+name: Devin Superset Remediation Controller
+description: Dispatch and reconcile GitHub-approved Devin remediation sessions
+branding:
+  icon: check-circle
+  color: green
+
+inputs:
+  command:
+    description: Controller command to run (dispatch, reconcile, simulate)
+    required: true
+  issue-number:
+    description: Issue number for dispatch runs
+    required: false
+    default: ""
+  fixture:
+    description: Fixture path for simulate runs
+    required: false
+    default: ""
+
+runs:
+  using: docker
+  image: Dockerfile
+  args:
+    - ${{ inputs.command }}
+    - ${{ inputs.issue-number }}
+    - ${{ inputs.fixture }}

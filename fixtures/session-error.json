@@ -1,0 +1,48 @@
+{
+  "issues": {
+    "22": {
+      "number": 22,
+      "title": "Diagnose and re-enable test_update_with_password_mask in CI",
+      "body": "Simulated issue",
+      "labels": [
+        {
+          "name": "devin:running"
+        }
+      ],
+      "html_url": "https://github.com/sb1992/superset/issues/22"
+    }
+  },
+  "comments": {
+    "22": [
+      "## Devin remediation\n\n**Status:** Session created \u2014 Devin is working\n**Started:** 2026-08-07T04:14:00Z\n**ACU consumed:** 0.5\n\n- Devin session: [open session](https://app.devin.ai/sessions/sim1)\n\n<!-- devin-remediation-state\n{\n  \"version\": 1,\n  \"session_id\": \"devin-sim-1\",\n  \"session_url\": \"https://app.devin.ai/sessions/sim1\",\n  \"dispatch_id\": \"issue-22-v1\",\n  \"issue_number\": 22,\n  \"dispatched_at\": \"2026-08-07T04:14:00Z\",\n  \"state\": \"running\",\n  \"ci_feedback_sent\": false,\n  \"acus_consumed\": 0.5,\n  \"pr_url\": null,\n  \"pr_number\": null,\n  \"pr_opened_at\": null\n}\n-->"
+    ]
+  },
+  "sessions": {
+    "devin-sim-1": {
+      "session_id": "devin-sim-1",
+      "url": "https://app.devin.ai/sessions/sim1",
+      "status": "error",
+      "acus_consumed": 2.1,
+      "structured_output": null,
+      "pull_requests": [
+        {
+          "url": "https://github.com/sb1992/superset/pull/23",
+          "state": "open"
+        }
+      ]
+    }
+  },
+  "pulls": {
+    "23": {
+      "number": 23,
+      "html_url": "https://github.com/sb1992/superset/pull/23",
+      "head": {
+        "sha": "simsha"
+      },
+      "state": "open"
+    }
+  },
+  "checks": {
+    "simsha": {}
+  }
+}

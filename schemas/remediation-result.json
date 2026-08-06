@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "required": ["outcome", "root_cause", "tests", "pull_request_url"],
+  "properties": {
+    "outcome": {
+      "type": "string",
+      "enum": ["pr_opened", "blocked", "not_reproducible", "needs_human"]
+    },
+    "root_cause": {"type": "string"},
+    "summary": {"type": "string"},
+    "changed_files": {"type": "array", "items": {"type": "string"}},
+    "tests": {"type": "array", "items": {"type": "string"}},
+    "pull_request_url": {"type": ["string", "null"]},
+    "skill_used": {"type": "string"},
+    "remaining_risks": {"type": "array", "items": {"type": "string"}},
+    "blocker": {"type": ["string", "null"]}
+  }
+}
