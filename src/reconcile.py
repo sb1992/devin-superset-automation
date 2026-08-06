@@ -80,7 +80,9 @@ def _verify_pr(gh, session: dict, cfg) -> dict | None:
     configured repository and target the configured base branch. 404/missing is
     "no PR"; transient errors propagate to the per-issue boundary."""
     for pr_ref in session.get("pull_requests") or []:
-        number = _pr_ref_for_repo(pr_ref.get("url", ""), cfg.target_repo)
+        # The live v3 API uses pr_url; accept url as well for robustness.
+        ref_url = pr_ref.get("pr_url") or pr_ref.get("url") or ""
+        number = _pr_ref_for_repo(ref_url, cfg.target_repo)
         if number is None:
             continue
         try:

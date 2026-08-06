@@ -23,7 +23,7 @@ def dispatched_world():
 
 def add_pr(gh, devin, sid, number=23, sha="abc123", checks=None):
     devin.sessions[sid]["pull_requests"] = [
-        {"url": f"https://github.com/sb1992/superset/pull/{number}", "state": "open"}
+        {"pr_url": f"https://github.com/sb1992/superset/pull/{number}", "pr_state": "open"}
     ]
     gh.pulls[number] = {
         "number": number,

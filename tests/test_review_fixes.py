@@ -77,7 +77,7 @@ def test_stale_conclusion_is_red():
 def test_pr_from_foreign_repo_is_not_bound():
     gh, devin, cfg, sid = dispatched_world()
     devin.sessions[sid]["pull_requests"] = [
-        {"url": "https://github.com/other/repo/pull/23", "state": "open"}
+        {"pr_url": "https://github.com/other/repo/pull/23", "pr_state": "open"}
     ]
     gh.pulls[23] = {"number": 23, "html_url": "https://github.com/sb1992/superset/pull/23",
                     "head": {"sha": "s"}, "base": {"ref": "master"}, "state": "open"}
