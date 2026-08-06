@@ -46,8 +46,18 @@ def median_minutes(pairs: list[tuple[str, str]]) -> int | None:
 
 
 def _escape_cell(text: str) -> str:
-    """Keep untrusted titles from corrupting the Markdown table."""
-    return (text or "").replace("|", "\\|").replace("\n", " ").replace("\r", " ")
+    """Keep untrusted titles from corrupting the Markdown table.
+
+    Backslashes are escaped first so a pre-existing backslash cannot turn our
+    pipe escape back into a live table delimiter.
+    """
+    return (
+        (text or "")
+        .replace("\\", "\\\\")
+        .replace("|", "\\|")
+        .replace("\n", " ")
+        .replace("\r", " ")
+    )
 
 
 def collect_runs(gh) -> list[dict]:

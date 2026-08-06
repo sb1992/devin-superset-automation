@@ -175,3 +175,28 @@ def test_duplicate_dispatch_repairs_missing_running_label():
     result = run_dispatch(cfg, gh, devin, issue_number=22)
     assert result["reason"] == "duplicate"
     assert "devin:running" in gh.labels[22]
+
+
+def test_pr_with_missing_base_metadata_is_not_bound():
+    gh, devin, cfg, sid = dispatched_world()
+    add_pr(gh, devin, sid, checks={})
+    del gh.pulls[23]["base"]
+    run_reconcile(cfg, gh, devin)
+    marker = parse_marker(gh.list_comments(22)[0]["body"])
+    assert marker.pr_number is None
+
+
+def test_output_with_non_string_test_entries_is_invalid():
+    from src.reconcile import output_is_valid
+    bad = dict(VALID_OUTPUT)
+    bad["tests"] = [123]
+    assert output_is_valid(bad) is False
+    good = dict(VALID_OUTPUT)
+    assert output_is_valid(good) is True
+
+
+def test_escape_cell_neutralizes_backslash_pipe():
+    from src.report import _escape_cell
+    out = _escape_cell("x\\|y")
+    assert "\\\\" in out  # backslash escaped before the pipe
+    assert "\\|" in out

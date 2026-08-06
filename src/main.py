@@ -94,15 +94,22 @@ def cmd_reconcile(cfg: Config) -> int:
 
     summary = run_reconcile(cfg, gh, devin)
     runs = _update_dashboard(cfg, gh)
+    error_lines = [
+        f"- ⚠️ #{e['issue']} skipped this cycle: {e['error']}" for e in summary.get("errors", [])
+    ]
     _step_summary(
         cfg,
         ["## Devin Remediation Controller — reconcile", f"- Active runs processed: {len(summary['runs'])}"]
         + [
             f"- #{r['issue']}: {r['state']} (ci={r['ci']}, acu={r['acus_consumed']})"
             for r in summary["runs"]
-        ],
+        ]
+        + error_lines,
     )
-    _write_report(cfg, {"reconciled": summary["runs"], "all_runs": runs})
+    _write_report(
+        cfg,
+        {"reconciled": summary["runs"], "errors": summary.get("errors", []), "all_runs": runs},
+    )
     return 0
 
 

@@ -62,7 +62,8 @@ def output_is_valid(structured_output) -> bool:
         return False
     if not isinstance(structured_output["root_cause"], str) or not structured_output["root_cause"].strip():
         return False
-    if not isinstance(structured_output["tests"], list):
+    tests = structured_output["tests"]
+    if not isinstance(tests, list) or not all(isinstance(t, str) for t in tests):
         return False
     pr_url = structured_output["pull_request_url"]
     return pr_url is None or isinstance(pr_url, str)
@@ -92,7 +93,7 @@ def _verify_pr(gh, session: dict, cfg) -> dict | None:
                 continue
             raise
         base = (pr.get("base") or {}).get("ref")
-        if base is not None and base != cfg.target_branch:
+        if base != cfg.target_branch:  # absent metadata fails closed too
             continue
         return pr
     return None

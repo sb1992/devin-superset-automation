@@ -102,8 +102,11 @@ tests/                     51 unit tests (dedup, marker, policy, prompts, dashbo
    | Variable | `DEVIN_CI_ALLOWLIST` | `unit-tests,pre-commit` |
 
 4. **Bootstrap the fork** with one commit on `master` containing:
-   - `.github/workflows/devin-remediation.yml` (thin workflow calling this
-     action, pinned to a commit SHA)
+   - `.github/workflows/devin-remediation.yml` — copy
+     [`examples/devin-remediation.yml`](examples/devin-remediation.yml) and
+     replace `PINNED_SHA` with a commit SHA of this repository. The example
+     carries the required per-issue `concurrency` group (duplicate-dispatch
+     protection) and the reconcile artifact-upload step; do not remove them.
    - `.agents/skills/superset-quarantine-to-green/SKILL.md` (the repo-native
      procedure Devin invokes via `@skills:`)
 

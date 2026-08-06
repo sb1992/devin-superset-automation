@@ -1,0 +1,81 @@
+name: Devin Remediation
+
+on:
+  issues:
+    types: [labeled]
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+  checks: read
+  actions: read
+
+jobs:
+  dispatch:
+    if: >-
+      github.event_name == 'issues' &&
+      github.event.label.name == 'devin:ready'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: devin-issue-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    steps:
+      - name: Dispatch Devin session
+        uses: sb1992/devin-superset-automation@PINNED_SHA
+        with:
+          command: dispatch
+          issue-number: ${{ github.event.issue.number }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          DEVIN_API_KEY: ${{ secrets.DEVIN_API_KEY }}
+          DEVIN_ORG_ID: ${{ vars.DEVIN_ORG_ID }}
+          DEVIN_PLAYBOOK_ID: ${{ vars.DEVIN_PLAYBOOK_ID }}
+          DEVIN_KNOWLEDGE_ID: ${{ vars.DEVIN_KNOWLEDGE_ID }}
+          DEVIN_DASHBOARD_ISSUE: ${{ vars.DEVIN_DASHBOARD_ISSUE }}
+          DEVIN_TARGET_REPO: ${{ vars.DEVIN_TARGET_REPO }}
+          DEVIN_TARGET_BRANCH: ${{ vars.DEVIN_TARGET_BRANCH }}
+          DEVIN_CI_ALLOWLIST: ${{ vars.DEVIN_CI_ALLOWLIST }}
+      - name: Upload dispatch report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dispatch-report-${{ github.event.issue.number }}-${{ github.run_id }}
+          path: report.json
+          retention-days: 7
+          if-no-files-found: ignore
+
+  reconcile:
+    if: >-
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: devin-reconcile
+      cancel-in-progress: false
+    steps:
+      - name: Reconcile active sessions
+        uses: sb1992/devin-superset-automation@PINNED_SHA
+        with:
+          command: reconcile
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          DEVIN_API_KEY: ${{ secrets.DEVIN_API_KEY }}
+          DEVIN_ORG_ID: ${{ vars.DEVIN_ORG_ID }}
+          DEVIN_DASHBOARD_ISSUE: ${{ vars.DEVIN_DASHBOARD_ISSUE }}
+          DEVIN_TARGET_REPO: ${{ vars.DEVIN_TARGET_REPO }}
+          DEVIN_TARGET_BRANCH: ${{ vars.DEVIN_TARGET_BRANCH }}
+          DEVIN_CI_ALLOWLIST: ${{ vars.DEVIN_CI_ALLOWLIST }}
+      - name: Upload reconcile report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reconcile-report-${{ github.run_id }}
+          path: report.json
+          retention-days: 7
+          if-no-files-found: ignore
