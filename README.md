@@ -65,7 +65,7 @@ schemas/remediation-result.json   structured-output contract Devin must fill
 resources/                 source-controlled Playbook + Knowledge (synced via API)
 scripts/sync_devin_resources.py   idempotent resource sync, prints IDs
 fixtures/                  offline scenarios for simulate mode
-tests/                     51 unit tests (dedup, marker, policy, prompts, dashboard)
+tests/                     69 unit tests (dedup, marker, policy, prompts, dashboard)
 ```
 
 ## Prerequisites
