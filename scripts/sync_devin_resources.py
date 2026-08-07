@@ -1,7 +1,9 @@
-"""Sync the source-controlled Playbook and Knowledge note to the Devin org.
+"""Publish the source-controlled Playbook and Knowledge note to the Devin org.
 
-Idempotent by name: existing resources with the same name are updated, missing
-ones are created. Prints the resulting IDs for use as GitHub Actions variables.
+Create-if-absent, reuse-by-name otherwise: this never overwrites a resource that
+already exists, so editing the markdown here requires deleting the remote copy
+(or renaming it) to republish. Prints the resulting IDs for the Actions
+variables.
 
 Usage: DEVIN_API_KEY=... DEVIN_ORG_ID=... python scripts/sync_devin_resources.py
 """

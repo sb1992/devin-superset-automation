@@ -20,7 +20,7 @@ import dataclasses
 import re
 from datetime import datetime, timezone
 
-from .dispatch import InvalidMarkerError, find_marker_comment
+from .dispatch import InvalidMarkerError, _resource_lines, find_marker_comment
 from .policy import ci_verdict, evaluate_run, map_session_state, should_send_ci_feedback
 from .state import render_status_comment
 
@@ -295,6 +295,7 @@ def _reconcile_issue(cfg, gh, devin, issue) -> dict | None:
         status_line=_STATUS_LINES.get(state, state),
         validation_lines=validation or None,
         current_action=_current_action(state, ci, reason),
+        resources=_resource_lines(cfg),
     )
     # Persist state BEFORE any side effect that must not repeat (the repair
     # message): a crash after this update loses at most the message itself.
