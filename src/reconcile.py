@@ -144,6 +144,22 @@ def _ci_feedback_message(failing: list[str]) -> str:
     )
 
 
+def _last_decisive_completion(gh, pr, cfg) -> str | None:
+    """When the final allowlisted check finished, per GitHub."""
+    getter = getattr(gh, "check_completion_times", None)
+    if pr is None or getter is None:
+        return None
+    try:
+        times = getter(pr["head"]["sha"])
+    except Exception:
+        return None
+    decisive = [
+        t for n, t in times.items()
+        if t and any(n.startswith(e) for e in cfg.ci_allowlist)
+    ]
+    return max(decisive) if decisive else None
+
+
 def _grace_expired(sent_at: str | None) -> bool:
     if not sent_at:
         return True
@@ -214,12 +230,14 @@ def _reconcile_issue(cfg, gh, devin, issue) -> dict | None:
         if state == "failed" and ci == "red" and feedback_sent and not feedback_exhausted:
             state = "pr-opened"
 
+    # Prefer GitHub's own timestamps; fall back to observation time only when
+    # the API omits them, so durations never silently include polling delay.
     pr_opened_at = marker.pr_opened_at
     if pr and pr_opened_at is None:
-        pr_opened_at = _utc_now()
+        pr_opened_at = pr.get("created_at") or _utc_now()
     green_at = marker.green_at
     if ci == "green" and green_at is None:
-        green_at = _utc_now()
+        green_at = _last_decisive_completion(gh, pr, cfg) or _utc_now()
     # First-pass = reached green without ever needing an automated repair message.
     first_pass_ci = marker.first_pass_ci
     if ci == "green" and first_pass_ci is None:

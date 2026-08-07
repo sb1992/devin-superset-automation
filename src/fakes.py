@@ -17,6 +17,7 @@ class FakeGitHub:
         self.issue_bodies: dict[int, str] = {}
         self.pulls: dict[int, dict] = {}
         self.checks: dict[str, dict] = {}
+        self.check_times: dict[str, dict] = {}
         self._comment_ids = itertools.count(1000)
 
     def get_issue(self, number):
@@ -65,6 +66,9 @@ class FakeGitHub:
 
     def check_runs_for_ref(self, ref):
         return dict(self.checks.get(ref, {}))
+
+    def check_completion_times(self, ref):
+        return dict(self.check_times.get(ref, {}))
 
     def authenticated_login(self):
         return self.default_author

@@ -97,6 +97,20 @@ class GitHubClient:
     def get_pull(self, number: int) -> dict:
         return self._get(f"/pulls/{number}")
 
+    def check_completion_times(self, ref: str) -> dict[str, str | None]:
+        """Return {check name: completed_at} so durations use GitHub's own
+        timestamps rather than the moment this poller observed them."""
+        times: dict[str, str | None] = {}
+        page = 1
+        while True:
+            data = self._get(f"/commits/{ref}/check-runs", per_page=100, page=page, filter="latest")
+            batch = data.get("check_runs", [])
+            for run in batch:
+                times[run["name"]] = run.get("completed_at")
+            if len(batch) < 100:
+                return times
+            page += 1
+
     def check_runs_for_ref(self, ref: str) -> dict[str, str | None]:
         """Return {check name: conclusion} for a commit sha (None while running).
 
