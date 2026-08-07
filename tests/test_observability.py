@@ -84,3 +84,15 @@ def test_blocked_reason_explains_missing_output():
     assert "usage limit" in blocked_reason(session_detail="usage_limit_exceeded", output_valid=False)
     assert "structured output" in blocked_reason(session_detail="inactivity", output_valid=False)
     assert blocked_reason(session_detail="inactivity", output_valid=True) is None
+
+
+def test_prerendered_sublist_items_are_not_double_bulleted():
+    from src.state import Marker, render_status_comment
+    m = Marker(session_id="s", session_url="u", dispatch_id="d", issue_number=1,
+               dispatched_at="t", state="pr-opened", ci_feedback_sent=False,
+               acus_consumed=0.0, pr_url=None, pr_number=None)
+    body = render_status_comment(m, status_line="x",
+                                 validation_lines=["Top level", "  - nested item: success"])
+    assert "- Top level" in body
+    assert "-   - nested" not in body        # no double bullet
+    assert "  - nested item: success" in body

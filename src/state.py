@@ -93,7 +93,11 @@ def render_status_comment(
     if resources:
         lines += ["", "### Policy resources", ""] + [f"- {r}" for r in resources]
     if validation_lines:
-        lines += ["", "### Validation", ""] + [f"- {v}" for v in validation_lines]
+        # Lines that arrive already indented are pre-formatted sub-items; only
+        # bare lines get a bullet, so nesting never renders as "-   - item".
+        lines += ["", "### Validation", ""] + [
+            v if v.startswith(" ") else f"- {v}" for v in validation_lines
+        ]
     if current_action:
         lines += ["", f"**Current action:** {current_action}"]
     lines += ["", render_marker(marker)]
