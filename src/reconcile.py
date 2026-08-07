@@ -253,6 +253,7 @@ def _reconcile_issue(cfg, gh, devin, issue) -> dict | None:
         pr_opened_at=pr_opened_at,
         green_at=green_at,
         first_pass_ci=first_pass_ci,
+        blocked_reason=reason,
     )
     decisive, informational = classify_checks(checks, cfg.ci_allowlist)
     reason = blocked_reason(session.get("status_detail"), valid) if state == "blocked" else None

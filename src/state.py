@@ -40,6 +40,7 @@ class Marker:
     written_by: str | None = None
     green_at: str | None = None
     first_pass_ci: bool | None = None
+    blocked_reason: str | None = None
 
 
 def render_marker(marker: Marker) -> str:

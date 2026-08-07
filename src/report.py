@@ -86,6 +86,7 @@ def collect_runs(gh) -> list[dict]:
                 "pr_opened_at": marker.pr_opened_at,
                 "green_at": marker.green_at,
                 "first_pass_ci": marker.first_pass_ci,
+                "blocked_reason": marker.blocked_reason,
             }
         )
     return sorted(runs, key=lambda r: r["issue"])
