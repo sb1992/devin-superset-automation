@@ -101,6 +101,38 @@ def _verify_pr(gh, session: dict, cfg) -> dict | None:
     return None
 
 
+def classify_checks(checks: dict, allowlist: list[str]) -> tuple[dict, dict]:
+    """Split checks into the ones that decide success and the ones that don't.
+
+    A fork cannot run every upstream job; showing a failing informational check
+    beside "Succeeded" reads as a contradiction unless the two are labeled.
+    """
+    decisive, informational = {}, {}
+    for name, conclusion in checks.items():
+        target = decisive if any(name.startswith(e) for e in allowlist) else informational
+        target[name] = conclusion
+    return decisive, informational
+
+
+def describe_gates(pr_exists: bool, output_valid: bool, ci: str) -> list[str]:
+    """State each success condition and whether it is met, so a reader never has
+    to infer why a run did or did not succeed."""
+    return [
+        f"Pull request verified on GitHub: {'yes' if pr_exists else 'no'}",
+        f"Structured output valid: {'yes' if output_valid else 'no — not provided or invalid'}",
+        f"Applicable CI checks: {ci}",
+    ]
+
+
+def blocked_reason(session_detail: str | None, output_valid: bool) -> str | None:
+    """Human-readable reason a run needs attention, or None when nothing blocks."""
+    if output_valid:
+        return None
+    if session_detail == "usage_limit_exceeded":
+        return "session stopped at its usage limit before reporting results"
+    return "session ended without valid structured output"
+
+
 def _ci_feedback_message(failing: list[str]) -> str:
     names = ", ".join(failing[:5])
     return (
@@ -185,6 +217,13 @@ def _reconcile_issue(cfg, gh, devin, issue) -> dict | None:
     pr_opened_at = marker.pr_opened_at
     if pr and pr_opened_at is None:
         pr_opened_at = _utc_now()
+    green_at = marker.green_at
+    if ci == "green" and green_at is None:
+        green_at = _utc_now()
+    # First-pass = reached green without ever needing an automated repair message.
+    first_pass_ci = marker.first_pass_ci
+    if ci == "green" and first_pass_ci is None:
+        first_pass_ci = not marker.ci_feedback_sent
     new_marker = dataclasses.replace(
         marker,
         state=state,
@@ -194,8 +233,18 @@ def _reconcile_issue(cfg, gh, devin, issue) -> dict | None:
         pr_url=pr["html_url"] if pr else marker.pr_url,
         pr_number=pr["number"] if pr else marker.pr_number,
         pr_opened_at=pr_opened_at,
+        green_at=green_at,
+        first_pass_ci=first_pass_ci,
     )
-    validation = [f"{name}: {conclusion or 'running'}" for name, conclusion in sorted(checks.items())]
+    decisive, informational = classify_checks(checks, cfg.ci_allowlist)
+    reason = blocked_reason(session.get("status_detail"), valid) if state == "blocked" else None
+    validation = describe_gates(pr is not None, valid, ci)
+    if decisive:
+        validation.append("Required checks (decide success):")
+        validation += [f"  - {n}: {c or 'running'}" for n, c in sorted(decisive.items())]
+    if informational:
+        validation.append("Informational checks (not used for success):")
+        validation += [f"  - {n}: {c or 'running'}" for n, c in sorted(informational.items())]
     output = session.get("structured_output")
     if isinstance(output, dict) and output.get("outcome"):
         validation.insert(
@@ -206,7 +255,7 @@ def _reconcile_issue(cfg, gh, devin, issue) -> dict | None:
         new_marker,
         status_line=_STATUS_LINES.get(state, state),
         validation_lines=validation or None,
-        current_action=_current_action(state, ci),
+        current_action=_current_action(state, ci, reason),
     )
     # Persist state BEFORE any side effect that must not repeat (the repair
     # message): a crash after this update loses at most the message itself.
@@ -228,12 +277,17 @@ def _reconcile_issue(cfg, gh, devin, issue) -> dict | None:
     }
 
 
-def _current_action(state: str, ci: str) -> str:
+def _current_action(state: str, ci: str, reason: str | None = None) -> str:
     if state == "running":
         return "Waiting for Devin to open a PR"
     if state == "pr-opened":
         return "Waiting for applicable CI checks" if ci != "red" else "CI failed — repair requested from Devin"
-    return "None — terminal state"
+    if state == "blocked":
+        detail = f" ({reason})" if reason else ""
+        return f"Needs a human to review the PR and decide whether to accept it{detail}"
+    if state == "failed":
+        return "Needs a human: no verified remediation was produced"
+    return "None — remediation verified"
 
 
 def _set_state_label(gh, issue_number: int, state: str) -> None:

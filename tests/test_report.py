@@ -47,8 +47,7 @@ def test_dashboard_shows_denominators_and_no_bare_percentages():
 
     assert "1 of 2" in md            # successes shown with denominator
     assert "%" not in md             # no bare percentages at small n
-    assert "2.8" in md               # total ACU = 2.1 + 0.7
-    assert "18" in md                # median approval->PR minutes
+    assert "18" in md                # median dispatch->PR minutes
     assert "https://s/1" in md and "https://p/1" in md
     assert "#21" in md and "#22" in md
     assert "Last updated: 2026-08-07 05:10 UTC" in md
@@ -68,7 +67,7 @@ def test_median_ignores_pairs_with_end_before_start():
     assert median_minutes([("2026-08-07T04:00:00Z", "2026-08-06T04:00:00Z")]) is None
 
 
-def test_dashboard_shows_duration_and_acu_lag_note():
+def test_dashboard_shows_duration_and_states_cost_is_unavailable():
     runs = [
         {"issue": 21, "title": "A", "state": "succeeded", "session_url": "https://s/1",
          "pr_url": "https://p/1", "acus_consumed": 0.0,
@@ -76,4 +75,4 @@ def test_dashboard_shows_duration_and_acu_lag_note():
     ]
     md = build_dashboard(runs, generated_at="now")
     assert "18m" in md                     # duration to PR
-    assert "may lag" in md                 # ACU honesty note
+    assert "unavailable" in md.lower()     # cost stated as unavailable, not zero

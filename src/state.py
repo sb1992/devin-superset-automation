@@ -38,6 +38,8 @@ class Marker:
     pr_opened_at: str | None = None
     ci_feedback_sent_at: str | None = None
     written_by: str | None = None
+    green_at: str | None = None
+    first_pass_ci: bool | None = None
 
 
 def render_marker(marker: Marker) -> str:

@@ -43,10 +43,10 @@ def _write_report(cfg: Config, payload: dict) -> None:
     out.write_text(redact(json.dumps(payload, indent=2), cfg.secrets()))
 
 
-def _update_dashboard(cfg: Config, gh) -> list[dict]:
+def _update_dashboard(cfg: Config, gh, errors: list[dict] | None = None) -> list[dict]:
     runs = collect_runs(gh)
     if cfg.dashboard_issue:
-        body = build_dashboard(runs, generated_at=_now_display())
+        body = build_dashboard(runs, generated_at=_now_display(), errors=errors)
         gh.update_issue_body(cfg.dashboard_issue, body)
     return runs
 
@@ -93,7 +93,7 @@ def cmd_reconcile(cfg: Config) -> int:
     devin = DevinClient(cfg.devin_api_key, cfg.devin_org_id)
 
     summary = run_reconcile(cfg, gh, devin)
-    runs = _update_dashboard(cfg, gh)
+    runs = _update_dashboard(cfg, gh, errors=summary.get("errors"))
     error_lines = [
         f"- ⚠️ #{e['issue']} skipped this cycle: {e['error']}" for e in summary.get("errors", [])
     ]
