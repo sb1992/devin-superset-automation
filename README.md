@@ -63,9 +63,9 @@ src/
   fakes.py                 in-memory fakes shared by tests and simulate mode
 schemas/remediation-result.json   structured-output contract Devin must fill
 resources/                 source-controlled Playbook + Knowledge (synced via API)
-scripts/sync_devin_resources.py   idempotent resource sync, prints IDs
+scripts/sync_devin_resources.py   create-if-absent resource publish, prints IDs
 fixtures/                  offline scenarios for simulate mode
-tests/                     69 unit tests (dedup, marker, policy, prompts, dashboard)
+tests/                     93 unit tests (dedup, marker, policy, prompts, dashboard, gates)
 ```
 
 ## Prerequisites
@@ -78,7 +78,7 @@ tests/                     69 unit tests (dedup, marker, policy, prompts, dashbo
 
 ## Setup
 
-1. **Sync Devin resources** (idempotent; prints the IDs used below):
+1. **Publish Devin resources** (create-if-absent, reuse by name; prints the IDs below):
 
    ```bash
    DEVIN_API_KEY=... DEVIN_ORG_ID=... python scripts/sync_devin_resources.py
@@ -135,11 +135,12 @@ a durable marker before any session is created.
 
 ```bash
 docker build -t devin-controller .
-docker run --rm -e DEVIN_CI_ALLOWLIST="unit-tests,pre-commit" \
-  devin-controller simulate "" fixtures/session-finished.json
-docker run --rm -e DEVIN_CI_ALLOWLIST="unit-tests,pre-commit" \
-  devin-controller simulate "" fixtures/ci-red.json
+docker run --rm devin-controller simulate "" fixtures/session-finished.json   # -> succeeded
+docker run --rm devin-controller simulate "" fixtures/ci-red.json             # -> one repair message
 ```
+
+No credentials or environment variables are needed: the fixtures carry their own
+world. CI asserts these outcomes, not just the exit code.
 
 Fixtures cover: finished-and-green, CI-red (shows the single repair message),
 still-running, and session-error. Tests: `pip install -r requirements.txt
@@ -151,7 +152,7 @@ Four drill-down levels, all in GitHub:
 
 1. **Dashboard issue** — generated metrics table and per-run table; every
    ratio shows numerator and denominator ("1 of 2", never bare percentages).
-   ACU numbers come from the Devin API (`acus_consumed`), not estimates.
+   Cost is reported only when the account exposes it (see the ACU note below).
 2. **Per-issue status comment** — status, session link, PR, ACU, validation
    checks, current action; controller-owned, edited in place. A hidden
    versioned JSON marker in the same comment is the durable state.
