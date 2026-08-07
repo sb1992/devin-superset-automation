@@ -37,6 +37,9 @@ FEEDBACK_GRACE_MINUTES = 30
 
 REQUIRED_OUTPUT_FIELDS = ("outcome", "root_cause", "tests", "pull_request_url")
 _VALID_OUTCOMES = {"pr_opened", "blocked", "not_reproducible", "needs_human"}
+# Only this outcome is compatible with a successful remediation; the others are
+# the agent telling us a human is needed, and must never be graded as success.
+_SUCCESS_OUTCOMES = {"pr_opened"}
 
 _STATUS_LINES = {
     "running": "Session running — Devin is working",
@@ -67,6 +70,22 @@ def output_is_valid(structured_output) -> bool:
         return False
     pr_url = structured_output["pull_request_url"]
     return pr_url is None or isinstance(pr_url, str)
+
+
+def _output_supports_success(output, pr) -> bool:
+    """The agent's own verdict must be success-compatible, and any PR it claims
+    must be the PR we independently verified. A session that says "blocked" or
+    points at a different PR is never graded as a success."""
+    if not isinstance(output, dict):
+        return False
+    if output.get("outcome") not in _SUCCESS_OUTCOMES:
+        return False
+    claimed = output.get("pull_request_url")
+    if claimed and pr is not None:
+        claimed_number = _pr_ref_for_repo(claimed, pr["html_url"].split("/pull/")[0].split("github.com/")[-1])
+        if claimed_number is not None and claimed_number != pr["number"]:
+            return False
+    return True
 
 
 def _pr_ref_for_repo(url: str, repo: str) -> int | None:
@@ -202,7 +221,8 @@ def _reconcile_issue(cfg, gh, devin, issue) -> dict | None:
     pr = _verify_pr(gh, session, cfg)
     checks = gh.check_runs_for_ref(pr["head"]["sha"]) if pr else {}
     ci = ci_verdict(checks, cfg.ci_allowlist) if pr else "pending"
-    valid = output_is_valid(session.get("structured_output"))
+    output = session.get("structured_output")
+    valid = output_is_valid(output) and _output_supports_success(output, pr)
 
     feedback_sent = marker.ci_feedback_sent
     feedback_sent_at = marker.ci_feedback_sent_at
@@ -265,7 +285,6 @@ def _reconcile_issue(cfg, gh, devin, issue) -> dict | None:
     if informational:
         validation.append("Informational checks (not used for success):")
         validation += [f"  - {n}: {c or 'running'}" for n, c in sorted(informational.items())]
-    output = session.get("structured_output")
     if isinstance(output, dict) and output.get("outcome"):
         validation.insert(
             0,

@@ -38,6 +38,18 @@ def _trusted_authors(gh) -> set[str]:
     return trusted
 
 
+def _find_intent_comment(gh, issue_number: int):
+    """The controller-authored comment holding an unconfirmed dispatch intent."""
+    trusted = _trusted_authors(gh)
+    for comment in gh.list_comments(issue_number):
+        if _comment_author(comment) not in trusted and not _marker_is_self_attested(comment):
+            continue
+        marker = parse_marker(comment.get("body", ""))
+        if marker is not None and not marker.session_id:
+            return comment, marker
+    return None, None
+
+
 def _marker_is_self_attested(comment: dict) -> bool:
     """A marker that records its own author matches that comment's author.
 
@@ -105,6 +117,15 @@ def run_dispatch(cfg, gh, devin, issue_number: int) -> dict:
     except InvalidMarkerError:
         return {"dispatched": False, "reason": "invalid-marker", "issue": issue_number}
 
+    if existing is not None and not existing.session_id:
+        # Intent recorded but session creation never confirmed. Reuse this
+        # marker for the retry instead of refusing forever: the approval label
+        # is intentionally left in place by the failure path below.
+        existing = None
+        reuse_comment, _ = _find_intent_comment(gh, issue_number)
+    else:
+        reuse_comment = None
+
     if existing is not None:
         # Repair labels if an earlier partial failure lost the active label.
         if existing.state in ("dispatching", "running", "pr-opened"):
@@ -142,10 +163,12 @@ def run_dispatch(cfg, gh, devin, issue_number: int) -> dict:
         pr_number=None,
         written_by=getattr(gh, "authenticated_login", lambda: None)(),
     )
-    comment = gh.create_comment(
-        issue_number,
-        render_status_comment(marker, status_line="Dispatching a Devin session"),
-    )
+    intent_body = render_status_comment(marker, status_line="Dispatching a Devin session")
+    if reuse_comment is not None:
+        gh.update_comment(reuse_comment["id"], intent_body)
+        comment = reuse_comment
+    else:
+        comment = gh.create_comment(issue_number, intent_body)
 
     payload = {
         "title": f"Remediate Superset issue #{issue_number}",
@@ -167,6 +190,8 @@ def run_dispatch(cfg, gh, devin, issue_number: int) -> dict:
     if cfg.knowledge_id:
         payload["knowledge_ids"] = [cfg.knowledge_id]
 
+    # Labels are swapped only after a session exists. If this raises, the issue
+    # keeps devin:ready and the intent marker, so a retry is clean.
     session = devin.create_session(payload)
 
     # Phase 2: bind the session id into the durable marker.

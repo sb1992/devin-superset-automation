@@ -23,7 +23,7 @@ class Config:
     @classmethod
     def from_env(cls) -> "Config":
         dashboard = os.environ.get("DEVIN_DASHBOARD_ISSUE", "").strip()
-        allowlist = os.environ.get("DEVIN_CI_ALLOWLIST", "unit-tests,pre-commit")
+        allowlist = os.environ.get("DEVIN_CI_ALLOWLIST", "")
         return cls(
             github_token=os.environ.get("GITHUB_TOKEN", ""),
             devin_api_key=os.environ.get("DEVIN_API_KEY", ""),

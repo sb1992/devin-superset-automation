@@ -113,10 +113,28 @@ def cmd_reconcile(cfg: Config) -> int:
     return 0
 
 
+SIMULATION_DEFAULTS = {
+    "target_repo": "sb1992/superset",
+    "target_branch": "master",
+    "ci_allowlist": ["unit-tests", "pre-commit"],
+}
+
+
 def cmd_simulate(cfg: Config, fixture_path: str) -> int:
+    """Offline replay. Simulation must not depend on deployment configuration:
+    a reader cloning this repo has no org, repo, or allowlist set, so the
+    fixture's own world is used for anything unconfigured."""
     from .fakes import FakeDevin, FakeGitHub
 
     fixture = json.loads(Path(fixture_path).read_text())
+    sim = fixture.get("config", {})
+    cfg.target_repo = cfg.target_repo or sim.get("target_repo", SIMULATION_DEFAULTS["target_repo"])
+    cfg.target_branch = cfg.target_branch or sim.get(
+        "target_branch", SIMULATION_DEFAULTS["target_branch"]
+    )
+    cfg.ci_allowlist = cfg.ci_allowlist or sim.get(
+        "ci_allowlist", SIMULATION_DEFAULTS["ci_allowlist"]
+    )
     gh = FakeGitHub(issues={int(k): v for k, v in fixture.get("issues", {}).items()})
     for issue_number, comments in fixture.get("comments", {}).items():
         for body in comments:

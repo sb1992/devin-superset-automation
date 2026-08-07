@@ -18,10 +18,19 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt pytest
       - run: pytest
-      - name: Build the action image and run an offline simulation
+      - name: Build the action image and assert simulation outcomes
         run: |
           docker build -t devin-controller .
-          docker run --rm -e DEVIN_CI_ALLOWLIST="unit-tests,pre-commit" \
-            devin-controller simulate "" fixtures/session-finished.json
-          docker run --rm -e DEVIN_CI_ALLOWLIST="unit-tests,pre-commit" \
-            devin-controller simulate "" fixtures/ci-red.json
+
+          # A zero exit code is not evidence: assert the outcome each advertised
+          # scenario is supposed to produce.
+          green=$(docker run --rm devin-controller simulate "" fixtures/session-finished.json)
+          echo "$green" | grep -q "Successful remediations | 1 of 1" \
+            || { echo "::error::finished-and-green fixture did not reach succeeded"; echo "$green"; exit 1; }
+
+          red=$(docker run --rm devin-controller simulate "" fixtures/ci-red.json)
+          count=$(echo "$red" | grep -c "CI on your pull request is failing" || true)
+          [ "$count" = "1" ] \
+            || { echo "::error::ci-red fixture sent $count repair messages, expected exactly 1"; echo "$red"; exit 1; }
+
+          echo "Simulation outcomes verified: green scenario succeeds, red scenario sends one repair message."

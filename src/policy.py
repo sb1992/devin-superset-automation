@@ -8,7 +8,9 @@ structured output validates, and every allowlisted check is green. Devin's own
 from __future__ import annotations
 
 _WORKING_STATUSES = {"new", "claimed", "running", "resuming"}
-_SUCCESS_CONCLUSIONS = {"success", "neutral", "skipped"}
+# A gate that decides success must actually have passed. "neutral" and
+# "skipped" mean the check did not run its assertions, so they are not green.
+_SUCCESS_CONCLUSIONS = {"success"}
 
 
 _FAILURE_CONCLUSIONS = {"failure", "cancelled", "timed_out", "action_required", "stale"}
