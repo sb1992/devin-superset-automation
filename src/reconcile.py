@@ -232,6 +232,8 @@ def _reconcile_issue(cfg, gh, devin, issue) -> dict | None:
 
     # Prefer GitHub's own timestamps; fall back to observation time only when
     # the API omits them, so durations never silently include polling delay.
+    reason = blocked_reason(session.get("status_detail"), valid) if state == "blocked" else None
+
     pr_opened_at = marker.pr_opened_at
     if pr and pr_opened_at is None:
         pr_opened_at = pr.get("created_at") or _utc_now()
@@ -256,7 +258,6 @@ def _reconcile_issue(cfg, gh, devin, issue) -> dict | None:
         blocked_reason=reason,
     )
     decisive, informational = classify_checks(checks, cfg.ci_allowlist)
-    reason = blocked_reason(session.get("status_detail"), valid) if state == "blocked" else None
     validation = describe_gates(pr is not None, valid, ci)
     if decisive:
         validation.append("Required checks (decide success):")
